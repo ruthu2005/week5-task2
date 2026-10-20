@@ -1,0 +1,574 @@
+{
+  "info": {
+    "_postman_id": "a92b95c0-c48d-4a1b-90e8-07cb7e42d71a",
+    "name": "Product Management API - CRUD & Validation Test Collection",
+    "description": "Complete exported API client testing collection demonstrating valid CRUD operations and strict schema validation error handling for MongoDB and Mongoose.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Valid CRUD Operations",
+      "item": [
+        {
+          "name": "Create Product (Valid)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response has success true and product data\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.data).to.have.property(\"_id\");",
+                  "    pm.collectionVariables.set(\"productId\", json.data._id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Logitech MX Mechanical Wireless Keyboard\",\n  \"description\": \"Low-profile mechanical keyboard with Tactile Quiet switches, smart backlighting, and multi-device pairing.\",\n  \"price\": 169.99,\n  \"category\": \"Accessories\",\n  \"stock\": 30,\n  \"sku\": \"LOGI-MECH-001\",\n  \"tags\": [\"keyboard\", \"wireless\", \"logitech\", \"mechanical\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Creates a new product with valid data fulfilling all strict schema rules."
+          }
+        },
+        {
+          "name": "Get All Products (Paginated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Contains products array and pagination info\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.data).to.be.an(\"array\");",
+                  "    pm.expect(json.pagination).to.have.property(\"totalItems\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=1&limit=10&sortBy=newest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sortBy", "value": "newest" }
+              ]
+            },
+            "description": "Retrieves products with pagination and newest sorting."
+          }
+        },
+        {
+          "name": "Filter Products by Category & Price Range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"All returned items match filter criteria\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    json.data.forEach(function(item) {",
+                  "        pm.expect(item.category).to.equal(\"Accessories\");",
+                  "        pm.expect(item.price).to.be.at.least(50);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?category=Accessories&minPrice=50&maxPrice=300",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                { "key": "category", "value": "Accessories" },
+                { "key": "minPrice", "value": "50" },
+                { "key": "maxPrice", "value": "300" }
+              ]
+            },
+            "description": "Tests asynchronous filtering query by category and price range bounds."
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Returned product has expected ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.data._id).to.equal(pm.collectionVariables.get(\"productId\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "Fetches a single product by its MongoDB ObjectId."
+          }
+        },
+        {
+          "name": "Update Product by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Updated fields reflect new values\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.data.price).to.equal(149.99);",
+                  "    pm.expect(json.data.stock).to.equal(55);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 149.99,\n  \"stock\": 55,\n  \"description\": \"Updated description: Low-profile mechanical keyboard with updated firmware and enhanced battery life.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "Updates price and stock on existing product with Mongoose runValidators enabled."
+          }
+        },
+        {
+          "name": "Get Aggregated Product Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Aggregation output contains overall and category summaries\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.overall).to.have.property(\"totalProducts\");",
+                  "    pm.expect(json.byCategory).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/stats/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "stats", "summary"]
+            },
+            "description": "Executes Mongoose aggregation pipeline for product catalog statistics."
+          }
+        },
+        {
+          "name": "Delete Product by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Delete confirmation returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.message).to.include(\"deleted\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "Deletes the product created in test step 1."
+          }
+        },
+        {
+          "name": "System Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"API reports healthy status\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.equal(\"healthy\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Verifies API server liveness and uptime."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Validation Error Handling Tests",
+      "item": [
+        {
+          "name": "Create Error - Missing All Required Fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Validation error reports missing fields\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.error).to.equal(\"Validation Error\");",
+                  "    pm.expect(json.details).to.have.property(\"name\");",
+                  "    pm.expect(json.details).to.have.property(\"description\");",
+                  "    pm.expect(json.details).to.have.property(\"price\");",
+                  "    pm.expect(json.details).to.have.property(\"category\");",
+                  "    pm.expect(json.details).to.have.property(\"sku\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Submitting an empty body triggers strict Mongoose schema required field validations."
+          }
+        },
+        {
+          "name": "Create Error - Negative Price & Invalid Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Specific validation messages for price and category\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.details).to.have.property(\"price\");",
+                  "    pm.expect(json.details).to.have.property(\"category\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Test Item\",\n  \"description\": \"Detailed description with sufficient length\",\n  \"price\": -50.00,\n  \"category\": \"NonExistentCategory\",\n  \"sku\": \"INV-TEST-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Tests schema min price boundary (> 0) and enum category validation."
+          }
+        },
+        {
+          "name": "Create Error - Duplicate SKU Collision",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"Duplicate key error indicates SKU conflict\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.error).to.equal(\"Duplicate Key Error\");",
+                  "    pm.expect(json.message).to.include(\"already exists\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate SKU Product\",\n  \"description\": \"A product attempting to use an existing seeded SKU to verify unique index enforcement\",\n  \"price\": 120.00,\n  \"category\": \"Accessories\",\n  \"sku\": \"LOGI-MXM3S-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Attempts inserting a product with a pre-existing SKU to verify unique constraint enforcement."
+          }
+        },
+        {
+          "name": "Get Error - Malformed ObjectId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error specifies invalid ObjectId format\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.error).to.equal(\"Invalid ID\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/not-a-valid-object-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "not-a-valid-object-id-123"]
+            },
+            "description": "Tests handling of malformed MongoDB ObjectId parameters."
+          }
+        },
+        {
+          "name": "Get Error - Non-Existent Product ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Error confirms product was not found\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.error).to.equal(\"Not Found\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "507f1f77bcf86cd799439011"]
+            },
+            "description": "Tests query for a valid ObjectId format that does not exist in database."
+          }
+        },
+        {
+          "name": "Update Error - Negative Stock & RunValidators Enforcement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Validation error reports stock constraint violation on update\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.details).to.have.property(\"stock\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stock\": -10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "507f1f77bcf86cd799439011"]
+            },
+            "description": "Verifies that Mongoose runValidators triggers on PUT updates when invalid data is supplied."
+          }
+        },
+        {
+          "name": "Delete Error - Non-Existent ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Error confirms not found on delete\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.error).to.equal(\"Not Found\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "507f1f77bcf86cd799439011"]
+            },
+            "description": "Attempts deleting a non-existent document ID."
+          }
+        }
+      ]
+    }
+  ]
+}
